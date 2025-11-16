@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "PRODUCT-SERVICE", path = "/product", configuration = FeignCommonConfig.class)
-public interface ProductService {
+public interface ProductClient {
 
     @PostMapping
     ResponseEntity<Long> addProduct(@RequestBody ProductRequest productRequest);

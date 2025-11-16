@@ -8,6 +8,7 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 @Log4j2
 public class CustomErrorDecoder implements ErrorDecoder {
@@ -20,10 +21,22 @@ public class CustomErrorDecoder implements ErrorDecoder {
             if (in == null) {
                 return new RemoteServiceException("Empty error body", "EMPTY_BODY", response.status());
             }
-            ErrorResponse payload = mapper.readValue(in, ErrorResponse.class);
-            return new RemoteServiceException(payload.getErrorMessage(), payload.getErrorCode(), response.status());
+            byte[] bytes = in.readAllBytes();
+            String raw = new String(bytes, StandardCharsets.UTF_8);
+
+            // Try parsing expected ErrorResponse
+            try {
+                ErrorResponse payload = mapper.readValue(raw, ErrorResponse.class);
+                return new RemoteServiceException(payload.getErrorMessage(), payload.getErrorCode(), response.status());
+            } catch (IOException parseEx) {
+                log.warn("Could not parse error body as ErrorResponse. rawBody={}", raw);
+                // Fallback: return a RemoteServiceException containing raw body and PARSE_ERROR code
+                String msg = "Failed to parse error response: " + (raw.length() > 1024 ? raw.substring(0, 1024) + "..." : raw);
+                return new RemoteServiceException(msg, "PARSE_ERROR", response.status());
+            }
         } catch (IOException ex) {
-            return new RemoteServiceException("Failed to parse error response", "PARSE_ERROR", response.status());
+            log.error("Error reading feign response body", ex);
+            return new RemoteServiceException("Failed to read error body", "READ_ERROR", response.status());
         }
     }
 }

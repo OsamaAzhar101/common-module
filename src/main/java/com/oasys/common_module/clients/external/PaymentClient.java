@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "PAYMENT-SERVICE", path = "/payment", configuration = FeignCommonConfig.class)
-public interface PaymentService {
+public interface PaymentClient {
 
     @PostMapping("/process")
     ResponseEntity<String> processPayment(@RequestBody PaymentRequest paymentRequest);
